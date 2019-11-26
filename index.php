@@ -5,8 +5,6 @@ require 'Models/Dice.php';
 require 'Models/Player.php';
 
 $game = Game::getInstance();
-var_dump($game);
-// $game->setBoard(new Board);
 $game->setBoard(new Board('data/board.csv'));
 $game->setDice(new Dice());
 $game->addPlayer(new Player('Taro'));

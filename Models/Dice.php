@@ -2,10 +2,8 @@
 
 class Dice
 {
-    private $num;
-
-    public function __construct()
+    public function roll() : int
     {
-        $this->num = 0;   
+        return rand(1, 6);
     }
 }
