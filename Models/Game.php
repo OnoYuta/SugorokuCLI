@@ -2,17 +2,25 @@
 
 class Game
 {
+    private static $instance;
+
     private $board;
     private $dice;
-    private $players = [];
-    private $num_of_turns;
-    private $distance_to_goal;
-    public const GOAL_POINT = 100;
+    private $players;
+
+    const PAUSE = "P";
+
+    private function __construct(int $goal_point = 100)
+    {
+        define("GOAL_POINT", $goal_point);
+    }
 
     public static function getInstance() : self
     {
-        echo "Game start!\n";
-        return new Game();
+        if (empty(self::$instance)) {
+            self::$instance = new Game;
+        }
+        return self::$instance;
     }
 
     public function setBoard(Board $board) : void
@@ -32,50 +40,32 @@ class Game
 
     public function start()
     {
-        $this->num_of_turns = 0;
-        $this->distance_to_goal = self::GOAL_POINT;
+        $this->board->readSavedFile($this->players);
 
-        while ($this->distance_to_goal !== 0) {
+        while (!$this->board->isEndOfGame()) {
 
-            // csv出力用の文字列を格納
-            $outputs = [];
+            $this->board->continue($this->players, $this->dice);
 
-            // ターン開始(ここでゲームを続けるか否か確認)
-            $input = "";
-            while ($input !== "y" && $input !== "n") {
-                echo "Do you continue the game?\n[Yes:y][No:n]";
-                $input = mb_strtolower(trim(fgets(STDIN)));
-            }
-            if ($input === "n") {
-                echo "see you...\n";
+            // ターンごとに"プレイヤ名,現在地,ターン数"を出力する
+            // 例：Taro,3,4
+            $this->board->appendRecord($this->players);
+
+            if ($this->board->isEndOfGame()) {
+                break;
+            } elseif ($this->getInput() === self::PAUSE) {
+                echo "This game has been paused.\n";
                 exit;
             }
-            $this->num_of_turns++;
-
-            // プレイヤが順番にサイコロを振り、出た数字だけ進む
-            foreach ($this->players as $player) {
-                $outputs[] = $player->roll($this->dice);
-                // $outputs[] = $player->getTextToOutput();
-            }
-            $this->distance_to_goal = Player::getDistanceToGoal($this->players);
-            $outputs[] = $this->distance_to_goal . " points from the top to the goal.";
-            // ターンごとにプレイヤ名と現在地を出力する
-            $this->board->outputArrayToCsv($this->num_of_turns, $outputs);
         }
 
-        $winners = [];
-        foreach ($this->players as $player) {
-            if ($player->getPoint() === self::GOAL_POINT) {
-                $winners[] = $player;
-            }
-        }
-        if (count($winners) >= 2) {
-            echo "Draw game.\n";
-        } else {
-            $name_of_winner = $winners[0]->getName();
-            echo $name_of_winner . " win!!\n";
-        }
+        $this->board->showWinners($this->players);
 
+    }
+
+    public function getInput() : string
+    {
+        echo "If you want to pause this game, enter 'P'.";
+        return strtoupper(trim(fgets(STDIN)));
     }
 
 }
